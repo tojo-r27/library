@@ -8,7 +8,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
-
+use App\Http\Middleware\SecurityHeaders;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Append security headers to API responses
-        $middleware->appendToGroup('api', [\App\Http\Middleware\SecurityHeaders::class]);
+        $middleware->appendToGroup('api', [SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $render = static function (string $message, int $status = 500, ?array $errors = null) {
@@ -47,7 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Not found (invalid route/model)
         $exceptions->renderable(function (NotFoundHttpException $e, $request) use ($render) {
             if ($request->is('api/*') || $request->expectsJson()) {
-                return $render('Resource not found', 404);
+                return $render('Book not found', 404);
             }
         });
 

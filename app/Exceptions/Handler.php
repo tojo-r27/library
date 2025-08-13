@@ -7,6 +7,8 @@ use Throwable;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -59,7 +61,12 @@ class Handler extends ExceptionHandler
 
         if ($e instanceof HttpExceptionInterface) {
             $status = $e->getStatusCode();
-            $message = $message ?: $e->getMessage();
+            // Provide consistent message for 404
+            if ($status === 404) {
+                $message = 'Book not found';
+            } else {
+                $message = $e->getMessage() ?: $message;
+            }
         }
 
         // Validation exceptions already formatted by Laravel
@@ -69,6 +76,20 @@ class Handler extends ExceptionHandler
                 'message' => 'Validation failed',
                 'errors' => $e->errors(),
             ], 422);
+        }
+
+        if ($e instanceof NotFoundHttpException) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Book not found',
+            ], 404);
+        }
+
+        if ($e instanceof ModelNotFoundException) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Book not found',
+            ], 404);
         }
 
         return response()->json([

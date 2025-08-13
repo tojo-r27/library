@@ -76,39 +76,15 @@ class BookController extends Controller
     /**
      * Update the specified book in storage.
      */
-    public function update(BookUpdateRequest $request, string $id): JsonResponse
+    public function update(BookUpdateRequest $request, Book $book): JsonResponse
     {
-        $existing = $this->books->find((int) $id);
-
-        if ($existing) {
-            $updated = $this->books->update($existing->id, $request->validated());
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Book updated successfully',
-                'data' => (new BookResource($updated))->toArray($request),
-            ]);
-        }
-
-        // Upsert behavior: if not found, validate as store and create
-        $validator = Validator::make($request->all(), (new BookStoreRequest())->rules());
-        try {
-            $data = $validator->validate();
-        } catch (ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        }
-
-        [$book, $created] = $this->books->upsert((int) $id, $data);
+        $updated = $this->books->update($book->id, $request->validated());
 
         return response()->json([
             'status' => 'success',
-            'message' => $created ? 'Book created successfully' : 'Book updated successfully',
-            'data' => (new BookResource($book))->toArray($request),
-        ], $created ? 201 : 200);
+            'message' => 'Book updated successfully',
+            'data' => (new BookResource($updated))->toArray($request),
+        ]);
     }
 
     /**
