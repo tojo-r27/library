@@ -13,8 +13,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
 
+
 class BookController extends Controller
 {
+
     public function __construct(private BookService $books)
     {
         // Apply BookPolicy to all resource routes automatically
@@ -39,6 +41,7 @@ class BookController extends Controller
             'data' => $books->getCollection()->map(fn($b) => (new BookResource($b))->toArray($request)),
             'pagination' => [
                 'current_page' => $books->currentPage(),
+                'last_page' => $books->lastPage(),
                 'per_page' => $books->perPage(),
                 'total' => $books->total(),
             ],
@@ -62,17 +65,8 @@ class BookController extends Controller
     /**
      * Display the specified book.
      */
-    public function show(string $id): JsonResponse
+    public function show(Book $book): JsonResponse
     {
-        $book = $this->books->find((int) $id);
-
-        if (!$book) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Book not found'
-            ], 404);
-        }
-
         return response()->json([
             'status' => 'success',
             'data' => (new BookResource($book))->toArray(request())
@@ -87,7 +81,7 @@ class BookController extends Controller
         $existing = $this->books->find((int) $id);
 
         if ($existing) {
-            $updated = $this->books->update((int) $id, $request->validated());
+            $updated = $this->books->update($existing->id, $request->validated());
 
             return response()->json([
                 'status' => 'success',
@@ -120,16 +114,9 @@ class BookController extends Controller
     /**
      * Remove the specified book from storage.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Book $book): JsonResponse
     {
-        $deleted = $this->books->delete((int) $id);
-
-        if (!$deleted) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Book not found'
-            ], 404);
-        }
+                $deleted = $this->books->delete($book->id);
 
         return response()->json([
             'status' => 'success',
