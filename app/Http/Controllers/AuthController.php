@@ -20,17 +20,12 @@ class AuthController extends Controller
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);
-        $tokenResult = $user->createToken('library-token');
+        $token = $user->createToken('library-token')->plainTextToken;
 
         return response()->json([
             'status' => 'success',
             'message' => 'User registered successfully',
-            'data' => [
-                'user' => $user,
-                'access_token' => $tokenResult->accessToken,
-                'token_type' => 'Bearer',
-                'expires_at' => $tokenResult->token->expires_at,
-            ],
+            'data' => [],
         ], 201);
     }
 
@@ -41,27 +36,32 @@ class AuthController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
-        if (!Auth::attempt($credentials)) {
+        try {
+            if (!Auth::attempt($credentials)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid credentials',
+                ], 401);
+            }
+
+            /** @var User $user */
+            $user = Auth::user();
+            $token = $user->createToken('library-token')->plainTextToken;
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Welcome library',
+                'data' => [
+                    'accessToken' => $token,
+                    'refreshToken' => $user->refreshToken,
+                ],
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Invalid credentials',
-            ], 401);
+                'message' => 'Something went wrong',
+            ], 500);
         }
-
-        /** @var User $user */
-        $user = Auth::user();
-        $tokenResult = $user->createToken('library-token');
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Welcome library',
-            'data' => [
-                'user' => $user,
-                'access_token' => $tokenResult->accessToken,
-                'token_type' => 'Bearer',
-                'expires_at' => $tokenResult->token->expires_at,
-            ],
-        ]);
     }
 
     /**
@@ -70,13 +70,20 @@ class AuthController extends Controller
     public function logout(): JsonResponse
     {
         $user = Auth::user();
-        if ($user && $user->token()) {
-            $user->token()->revoke();
-        }
+        try {
+            if ($user && $user->currentAccessToken()) {
+                $user->currentAccessToken()->delete();
+            }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Logged out successfully',
-        ]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Logged out successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong',
+            ], 500);
+        }
     }
 }
