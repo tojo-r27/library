@@ -20,12 +20,13 @@ class AuthController extends Controller
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);
-        $token = $user->createToken('library-token')->plainTextToken;
 
         return response()->json([
             'status' => 'success',
             'message' => 'User registered successfully',
-            'data' => [],
+            'data' => [
+                'user' => $user,
+            ],
         ], 201);
     }
 
@@ -46,14 +47,26 @@ class AuthController extends Controller
 
             /** @var User $user */
             $user = Auth::user();
-            $token = $user->createToken('library-token')->plainTextToken;
+
+            // Create access & refresh tokens with expirations
+            $accessTokenResult = $user->createToken('access-token');
+            $accessToken = $accessTokenResult->plainTextToken;
+            $accessTokenModel = $accessTokenResult->accessToken;
+            $accessTokenModel->expires_at = now()->addSeconds(config('sanctum.access_expiration', 1800));
+            $accessTokenModel->save();
+
+            $refreshTokenResult = $user->createToken('refresh-token');
+            $refreshToken = $refreshTokenResult->plainTextToken;
+            $refreshTokenModel = $refreshTokenResult->accessToken;
+            $refreshTokenModel->expires_at = now()->addSeconds(config('sanctum.refresh_expiration', 86400));
+            $refreshTokenModel->save();
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Welcome library',
                 'data' => [
-                    'accessToken' => $token,
-                    'refreshToken' => $user->refreshToken,
+                    'accessToken' => $accessToken,
+                    'refreshToken' => $refreshToken,
                 ],
             ]);
         } catch (\Exception $e) {

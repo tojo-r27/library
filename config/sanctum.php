@@ -49,6 +49,11 @@ return [
 
     'expiration' => null,
 
+    'access_expiration' => 1800, // 30 minutes
+
+    'refresh_expiration' => 86400, // 1 day
+
+
     /*
     |--------------------------------------------------------------------------
     | Token Prefix
