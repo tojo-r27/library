@@ -8,7 +8,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
-use Throwable;
+
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,12 +17,16 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum']],
+    )
     ->withMiddleware(function (Middleware $middleware): void {
         // Append security headers to API responses
         $middleware->appendToGroup('api', [\App\Http\Middleware\SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $render = static function (string $message, int $status = 500, array $errors = null) {
+        $render = static function (string $message, int $status = 500, ?array $errors = null) {
             $payload = [
                 'status'  => 'error',
                 'message' => $message,

@@ -15,12 +15,12 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
-})->middleware('auth:api');
+})->middleware('auth:sanctum');
 
-// Book Management API Routes (protected by Passport + rate limit)
+// Book Management API Routes (protected by Sanctum + rate limit)
 // Protected routes
-Route::middleware(['auth:api', 'throttle:60,1'])
+Route::middleware(['auth:sanctum', 'throttle:60,1'])
     ->post('/logout', [AuthController::class, 'logout']);
 
-Route::middleware(['auth:api', 'throttle:60,1'])
+Route::middleware(['auth:sanctum', 'throttle:60,1'])
     ->apiResource('books', BookController::class);
