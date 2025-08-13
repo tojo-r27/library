@@ -7,6 +7,7 @@ use App\Services\BookService;
 use App\Http\Requests\BookStoreRequest;
 use App\Http\Requests\BookUpdateRequest;
 use App\Http\Resources\BookResource;
+use App\Filters\BookFilter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,8 @@ class BookController extends Controller
 {
     public function __construct(private BookService $books)
     {
+        // Apply BookPolicy to all resource routes automatically
+        $this->authorizeResource(Book::class, 'book');
     }
 
     /**
@@ -23,52 +26,22 @@ class BookController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // Pagination
+        // Clamp perPage between 1 and 20
         $perPage = (int) $request->get('per_page', 10);
         $perPage = min(max($perPage, 1), 20);
 
-        $query = Book::query();
-
-        // Search across title, author & summary (space-separated terms)
-        if ($search = $request->get('q')) {
-            $terms = array_filter(explode(' ', $search));
-            $query->where(function ($outer) use ($terms) {
-                foreach ($terms as $term) {
-                    $outer->where(function ($q) use ($term) {
-                        $q->where('title', 'like', "%{$term}%")
-                          ->orWhere('author', 'like', "%{$term}%")
-                          ->orWhere('summary', 'like', "%{$term}%");
-                    });
-                }
-            });
-        }
-
-        // Availability filter (?available=true|false)
-        if ($request->has('available')) {
-            $available = filter_var($request->get('available'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            if ($available !== null) {
-                $query->where('available', $available);
-            }
-        }
-
-        // Order by date (created_at or published_year) (?order=asc|desc&order_field=published_year)
-        $orderDir = strtolower($request->get('order', 'desc')) === 'asc' ? 'asc' : 'desc';
-        $orderField = in_array($request->get('order_field'), ['created_at', 'published_year'])
-            ? $request->get('order_field')
-            : 'created_at';
-        $query->orderBy($orderField, $orderDir);
-
-        $books = $query->paginate($perPage)->appends($request->query());
+        // Build filter from request
+        $filter = new BookFilter($request);
+        $books = $this->books->paginate($perPage, $filter);
 
         return response()->json([
             'status' => 'success',
+            'data' => $books->getCollection()->map(fn($b) => (new BookResource($b))->toArray($request)),
             'pagination' => [
                 'current_page' => $books->currentPage(),
                 'per_page' => $books->perPage(),
                 'total' => $books->total(),
-                'last_page' => $books->lastPage(),
             ],
-            'data' => $books->getCollection()->map(fn($b) => (new BookResource($b))->toArray($request))
         ]);
     }
 

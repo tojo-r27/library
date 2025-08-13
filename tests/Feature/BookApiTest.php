@@ -5,11 +5,20 @@ namespace Tests\Feature;
 use App\Models\Book;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Laravel\Sanctum\Sanctum;
+use App\Models\User;
 use Tests\TestCase;
 
 class BookApiTest extends TestCase
 {
     use RefreshDatabase, WithFaker;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Authenticate a test user for all book routes
+        Sanctum::actingAs(User::factory()->create());
+    }
 
     /**
      * Test getting all books with pagination.

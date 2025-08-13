@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\TokenService;
+
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
@@ -11,6 +13,9 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
+    public function __construct(private TokenService $tokens)
+    {
+    }
     /**
      * Register a new user and issue an access token.
      */
@@ -21,11 +26,16 @@ class AuthController extends Controller
 
         $user = User::create($data);
 
+        // issue tokens
+        $accessToken = $this->tokens->createAccessToken($user)->plainTextToken;
+        $refreshToken = $this->tokens->createRefreshToken($user)->plainTextToken;
+
         return response()->json([
             'status' => 'success',
             'message' => 'User registered successfully',
             'data' => [
-                'user' => $user,
+                'accessToken' => $accessToken,
+                'refreshToken' => $refreshToken,
             ],
         ], 201);
     }
@@ -48,18 +58,9 @@ class AuthController extends Controller
             /** @var User $user */
             $user = Auth::user();
 
-            // Create access & refresh tokens with expirations
-            $accessTokenResult = $user->createToken('access-token');
-            $accessToken = $accessTokenResult->plainTextToken;
-            $accessTokenModel = $accessTokenResult->accessToken;
-            $accessTokenModel->expires_at = now()->addSeconds(config('sanctum.access_expiration', 1800));
-            $accessTokenModel->save();
-
-            $refreshTokenResult = $user->createToken('refresh-token');
-            $refreshToken = $refreshTokenResult->plainTextToken;
-            $refreshTokenModel = $refreshTokenResult->accessToken;
-            $refreshTokenModel->expires_at = now()->addSeconds(config('sanctum.refresh_expiration', 86400));
-            $refreshTokenModel->save();
+            // Create access & refresh tokens via service
+            $accessToken = $this->tokens->createAccessToken($user)->plainTextToken;
+            $refreshToken = $this->tokens->createRefreshToken($user)->plainTextToken;
 
             return response()->json([
                 'status' => 'success',
@@ -75,6 +76,44 @@ class AuthController extends Controller
                 'message' => 'Something went wrong',
             ], 500);
         }
+    }
+
+    /**
+     * Refresh tokens using a valid refresh token.
+     */
+    public function refresh(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $refreshToken = $request->get('refresh_token');
+        if (!$refreshToken) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Refresh token required',
+            ], 422);
+        }
+
+        $tokenModel = $this->tokens->validateRefreshToken($refreshToken);
+        if (!$tokenModel) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid or expired refresh token',
+            ], 401);
+        }
+
+        /** @var User $user */
+        $user = $tokenModel->tokenable;
+        // revoke old refresh token
+        $tokenModel->delete();
+
+        $accessToken = $this->tokens->createAccessToken($user)->plainTextToken;
+        $newRefreshToken = $this->tokens->createRefreshToken($user)->plainTextToken;
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'accessToken' => $accessToken,
+                'refreshToken' => $newRefreshToken,
+            ],
+        ]);
     }
 
     /**

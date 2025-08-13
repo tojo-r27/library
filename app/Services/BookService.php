@@ -4,15 +4,17 @@ namespace App\Services;
 
 use App\Models\Book;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Filters\BookFilter;
 
 class BookService
 {
     /**
      * Paginate books.
      */
-    public function paginate(int $perPage = 15): LengthAwarePaginator
+    public function paginate(int $perPage, BookFilter $filter): LengthAwarePaginator
     {
-        return Book::query()->paginate($perPage);
+        $query = $filter->apply(Book::query());
+        return $query->paginate($perPage)->appends($filter->request()->query());
     }
 
     /**
