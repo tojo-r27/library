@@ -26,6 +26,8 @@ class AuthController extends Controller
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);
+        $user->email_verified_at = now();
+        $user->save();
 
         // issue tokens
         $accessToken = $this->tokens->createAccessToken($user)->plainTextToken;

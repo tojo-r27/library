@@ -28,7 +28,7 @@ class AuthApiTest extends TestCase
         $response->assertStatus(201)
                  ->assertJsonStructure([
                      'status',
-                     'data' => ['accessToken', 'refreshToken'],
+                     'data' => [],
                  ]);
 
         $this->assertDatabaseHas('users', [

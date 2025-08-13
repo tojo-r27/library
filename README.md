@@ -1,61 +1,125 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📚 Laravel Books API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Une API REST complète permettant de gérer une collection de livres (CRUD) avec authentification Sanctum.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🚀 Prérequis
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+* Docker >= 20.x et Docker Compose >= v2
+* (Facultatif) `make`, `curl` ou Postman pour tester les appels HTTP
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## ⚙️ Installation & Lancement
 
-## Learning Laravel
+```bash
+# 1. Cloner le dépôt
+ git clone <repo-url> && cd library
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+# 2. Copier le fichier d'environnement
+ cp .env.example .env
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+# 3. Lancer l'application
+ docker-compose up -d
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# 4. Installer les dépendances & générer la clé
+ docker-compose exec app composer install
+ docker-compose exec app php artisan key:generate
 
-## Laravel Sponsors
+# 5. Exécuter les migrations et seeders
+ docker-compose exec app php artisan migrate --seed
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### ⚡️ Alternative en une seule commande
 
-### Premium Partners
+```bash
+docker-compose up -d && docker-compose exec app bash -c "composer install && php artisan key:generate && php artisan migrate --seed"
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+L'API est alors disponible sur `http://localhost:8000/api`.
 
-## Contributing
+## 🔐 Authentification
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+L'API utilise Laravel Sanctum.
+1. `POST /api/register` → création d'un compte
+2. `POST /api/login` → obtention d'un token `Bearer`
+3. Ajouter l'en-tête : `Authorization: Bearer <token>` pour accéder aux routes protégées.
+4. `POST /api/logout` pour révoquer le token.
 
-## Code of Conduct
+## 📑 Endpoints
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Méthode | URI                     | Description                              | Auth |
+|---------|-------------------------|------------------------------------------|------|
+| POST    | /api/register           | Inscription                              | ❌   |
+| POST    | /api/login              | Connexion                                | ❌   |
+| POST    | /api/refresh            | Renouveler le token                      | ❌   |
+| POST    | /api/logout             | Déconnexion                              | ✅   |
+| GET     | /api/user               | Infos utilisateur courant                | ✅   |
+| GET     | /api/books              | Lister les livres                        | ✅   |
+| GET     | /api/books/{id}         | Détails d'un livre                       | ✅   |
+| POST    | /api/books              | Ajouter un livre                         | ✅   |
+| PUT     | /api/books/{id}         | Mettre à jour un livre                   | ✅   |
+| DELETE  | /api/books/{id}         | Supprimer un livre                       | ✅   |
 
-## Security Vulnerabilities
+> ✅ : nécessite l'en-tête `Authorization: Bearer <token>`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 💻 Exemples de requêtes cURL
 
-## License
+```bash
+# Inscription
+docker-compose exec app curl -X POST http://localhost:8000/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice","email":"alice@example.com","password":"secret","password_confirmation":"secret"}'
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Connexion (retourne le token)
+docker-compose exec app curl -X POST http://localhost:8000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice@example.com","password":"secret"}'
+
+# Lister les livres (endpoint protégé)
+curl http://localhost:8000/api/books \
+  -H "Authorization: Bearer <token>"
+
+# Ajouter un livre
+curl -X POST http://localhost:8000/api/books \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Le Petit Prince","author":"Antoine de Saint-Exupéry","year":1943}'
+```
+
+> Une collection Postman est disponible dans `docs/postman_collection.json`.
+
+## 🧪 Tests
+
+```bash
+# Exécuter la suite PHPUnit
+docker-compose exec app php artisan test
+```
+
+## 🗄️ Seeders
+
+Pour peupler rapidement la base :
+```bash
+docker-compose exec app php artisan migrate --seed   # migrations + seeders
+docker-compose exec app php artisan db:seed          # seulement les seeders
+```
+
+## 📂 Structure du projet (simplifiée)
+
+```
+├─ app/Http/Controllers       # Contrôleurs API
+├─ app/Models                 # Modèles Eloquent
+├─ database/seeders           # Classement des seeders
+├─ routes/api.php             # Déclarations des routes
+├─ docker-compose.yml         # Stack Docker
+└─ Dockerfile                 # Image PHP 8.2-FPM
+```
+
+## 🏗️ CI/CD (optionnel)
+
+Un job CI peut :
+1. Builder les containers
+2. Lancer `php artisan test`
+3. Publier l'image vers un registry Docker
+
+---
+> Generated with ❤️ by the Tojo
