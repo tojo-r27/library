@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
@@ -81,7 +82,7 @@ class AuthController extends Controller
     /**
      * Refresh tokens using a valid refresh token.
      */
-    public function refresh(\Illuminate\Http\Request $request): JsonResponse
+    public function refresh(Request $request): JsonResponse
     {
         $refreshToken = $request->get('refresh_token');
         if (!$refreshToken) {

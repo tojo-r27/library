@@ -12,6 +12,7 @@ Route::get('/welcome', fn () => response()->json(['message' => 'welcome']));
 // Public Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/refresh', [AuthController::class, 'refresh']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
