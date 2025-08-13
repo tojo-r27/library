@@ -5,6 +5,10 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// API root welcome
+Route::get('/', fn () => response()->json(['message' => 'welcome']));
+Route::get('/welcome', fn () => response()->json(['message' => 'welcome']));
+
 // Public Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
