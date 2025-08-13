@@ -13,14 +13,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
 
-
 class BookController extends Controller
 {
 
     public function __construct(private BookService $books)
     {
-        // Apply BookPolicy to all resource routes automatically
-        $this->authorizeResource(Book::class, 'book');
+
     }
 
     /**
@@ -28,9 +26,14 @@ class BookController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // Clamp perPage between 1 and 20
-        $perPage = (int) $request->get('per_page', 10);
-        $perPage = min(max($perPage, 1), 20);
+        // If no parameters at all, we want the full list ordered by created_at desc
+        if ($request->query() === []) {
+            $perPage = Book::count() ?: 1; // show all records in a single page
+        } else {
+            // Clamp perPage between 1 and 20 when explicitly paginating
+            $perPage = (int) $request->get('per_page', 10);
+            $perPage = min(max($perPage, 1), 20);
+        }
 
         // Build filter from request
         $filter = new BookFilter($request);

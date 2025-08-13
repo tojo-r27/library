@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Book;
 use Illuminate\Database\Seeder;
+use Carbon\Carbon;
 
 class BookSeeder extends Seeder
 {
@@ -330,8 +331,11 @@ class BookSeeder extends Seeder
             ],
         ];
 
-        foreach ($books as $book) {
-            Book::create($book);
+        foreach ($books as $bookData) {
+            $book = Book::create($bookData);
+            $book->update([
+                'created_at' => Carbon::now()->subDays(mt_rand(0, 365)),
+            ]);
         }
     }
 }

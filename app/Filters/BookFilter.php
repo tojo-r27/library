@@ -58,10 +58,11 @@ class BookFilter
 
     private function order(Builder $query): self
     {
-        $orderDir = strtolower($this->request->get('order', 'desc')) === 'asc' ? 'asc' : 'desc';
-        $orderField = in_array($this->request->get('order_field'), ['created_at', 'published_year'])
+        // Default order direction asc when not provided
+        $orderDir = strtolower($this->request->get('order', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $orderField = in_array($this->request->get('order_field'), ['created_at', 'published_year', 'title'])
             ? $this->request->get('order_field')
-            : 'created_at';
+            : 'title';
 
         $query->orderBy($orderField, $orderDir);
         return $this;
